@@ -1,0 +1,19 @@
+services:
+  - type: web
+    name: ticketmaster
+    runtime: node
+    plan: free
+    buildCommand: corepack pnpm install --frozen-lockfile
+    startCommand: pnpm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_VERSION
+        value: 22.14.0
+      - key: NODE_ENV
+        value: production
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_ANON_KEY
+        sync: false
+      - key: APP_URL
+        sync: false
