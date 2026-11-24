@@ -13,6 +13,8 @@ const frontendDir = config.frontendDir
   ? path.resolve(config.frontendDir)
   : path.resolve(here, '../frontend');
 
+// Set CORS_ORIGINS in Render to the exact Vercel site origin, e.g.
+// https://ticketmaster-self.vercel.app (no trailing slash).
 const allowedOrigins = new Set(
   (process.env.CORS_ORIGINS || '')
     .split(',')
@@ -22,11 +24,10 @@ const allowedOrigins = new Set(
 
 app.disable('x-powered-by');
 app.set('trust proxy', 1);
-
 app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
 app.use(express.json({ limit: '32kb' }));
 
-// Allow browser requests only from the frontend origins configured in Render.
+// Respond to browser preflight requests before the API's authentication middleware.
 app.use((req, res, next) => {
   const origin = req.get('Origin');
   const isAllowedOrigin = Boolean(origin && allowedOrigins.has(origin));
@@ -34,17 +35,10 @@ app.use((req, res, next) => {
   if (isAllowedOrigin) {
     res.setHeader('Access-Control-Allow-Origin', origin);
     res.setHeader('Vary', 'Origin');
-    res.setHeader(
-      'Access-Control-Allow-Methods',
-      'GET, POST, PUT, OPTIONS'
-    );
-    res.setHeader(
-      'Access-Control-Allow-Headers',
-      'Content-Type, Authorization'
-    );
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
   }
 
-  // Browsers send this preflight before JSON signup/login requests.
   if (req.method === 'OPTIONS') {
     return res.sendStatus(isAllowedOrigin ? 204 : 403);
   }
@@ -53,33 +47,24 @@ app.use((req, res, next) => {
 });
 
 app.use((req, res, next) => {
-  res.setHeader(
-    'Cache-Control',
-    req.path.startsWith('/api/') ? 'no-store' : 'no-cache'
-  );
+  res.setHeader('Cache-Control', req.path.startsWith('/api/') ? 'no-store' : 'no-cache');
   next();
 });
 
 app.use('/api', apiRoutes);
-
-app.use(
-  express.static(frontendDir, {
-    extensions: ['html'],
-    index: 'index.html',
-    maxAge: config.nodeEnv === 'production' ? '1h' : 0
-  })
-);
-
+app.use(express.static(frontendDir, {
+  extensions: ['html'],
+  index: 'index.html',
+  maxAge: config.nodeEnv === 'production' ? '1h' : 0
+}));
 app.use((req, res, next) => {
   if (req.path.startsWith('/api/')) {
     return next(new ApiError(404, 'API route not found.', 'ROUTE_NOT_FOUND'));
   }
-
   res.sendFile(path.join(frontendDir, 'index.html'), error => {
     if (error) next(error);
   });
 });
-
 app.use(errorHandler);
 
 app.listen(config.port, '0.0.0.0', () => {
