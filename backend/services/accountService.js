@@ -21,7 +21,7 @@ export async function updateProfile(req, { firstName, lastName, email, phone, lo
   if (String(email || '').trim().toLowerCase() !== authEmail.toLowerCase()) {
     throw new ApiError(400, 'Your sign-in email is verified by Supabase. Email changes are not available from this form yet.', 'EMAIL_CHANGE_UNAVAILABLE');
   }
-  const result = await req.supabase.from('profiles').update({ first_name: firstName.trim(), last_name: lastName.trim(), phone: String(phone || '').trim(), location: String(location || 'Lagos, Nigeria').trim() }).eq('id', req.auth.id).select('firstName:first_name,lastName:last_name,email,phone,location').single();
+  const result = await req.supabase.from('profiles').update({ first_name: firstName.trim(), last_name: lastName.trim(), phone: String(phone || '').trim(), location: String(location || 'New York City, NY').trim() }).eq('id', req.auth.id).select('firstName:first_name,lastName:last_name,email,phone,location').single();
   return check(result);
 }
 

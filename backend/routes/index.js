@@ -4,15 +4,12 @@ import * as auth from '../controllers/authController.js';
 import * as events from '../controllers/eventController.js';
 import * as orders from '../controllers/orderController.js';
 import * as account from '../controllers/accountController.js';
-import * as flights from '../controllers/flightController.js';
 import * as eventService from '../services/eventService.js';
 import { requireAuth } from '../middleware/requireAuth.js';
 import { asyncHandler } from '../utils/http.js';
 
 const api = Router();
 const authLimiter = rateLimit({ windowMs: 15 * 60 * 1000, limit: 25, standardHeaders: 'draft-8', legacyHeaders: false, message: { error: 'Too many authentication attempts. Please wait and try again.' } });
-const flightPlacesLimiter = rateLimit({ windowMs: 60 * 1000, limit: 60, standardHeaders: 'draft-8', legacyHeaders: false, message: { error: 'Too many place lookups. Wait a minute and try again.' } });
-const flightSearchLimiter = rateLimit({ windowMs: 60 * 1000, limit: 15, standardHeaders: 'draft-8', legacyHeaders: false, message: { error: 'Too many flight searches. Wait a minute and try again.' } });
 const wrap = asyncHandler;
 
 api.get('/health', wrap(async (_req, res) => res.json({ ...(await eventService.checkDatabase()), timestamp: new Date().toISOString() })));
@@ -21,8 +18,6 @@ api.post('/auth/login', authLimiter, wrap(auth.signIn));
 api.post('/auth/refresh', authLimiter, wrap(auth.refresh));
 api.post('/auth/forgot-password', authLimiter, wrap(auth.forgotPassword));
 api.post('/auth/update-password', authLimiter, wrap(auth.updatePassword));
-api.get('/flights/places', flightPlacesLimiter, requireAuth, wrap(flights.places));
-api.post('/flights/search', flightSearchLimiter, requireAuth, wrap(flights.search));
 api.get('/auth/session', requireAuth, wrap(auth.session));
 api.post('/auth/logout', requireAuth, wrap(auth.logout));
 

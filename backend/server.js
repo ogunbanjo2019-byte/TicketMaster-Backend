@@ -1,4 +1,5 @@
 import path from 'node:path';
+import { existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import express from 'express';
 import helmet from 'helmet';
@@ -11,7 +12,8 @@ const app = express();
 const here = path.dirname(fileURLToPath(import.meta.url));
 const frontendDir = config.frontendDir
   ? path.resolve(config.frontendDir)
-  : path.resolve(here, '../frontend');
+  : path.resolve(here, '../../frontend');
+const serveFrontend = existsSync(frontendDir);
 
 // Set CORS_ORIGINS in Render to the exact Vercel site origin, e.g.
 // https://ticketmaster-self.vercel.app (no trailing slash).
@@ -52,14 +54,19 @@ app.use((req, res, next) => {
 });
 
 app.use('/api', apiRoutes);
-app.use(express.static(frontendDir, {
-  extensions: ['html'],
-  index: 'index.html',
-  maxAge: config.nodeEnv === 'production' ? '1h' : 0
-}));
+if (serveFrontend) {
+  app.use(express.static(frontendDir, {
+    extensions: ['html'],
+    index: 'index.html',
+    maxAge: config.nodeEnv === 'production' ? '1h' : 0
+  }));
+}
 app.use((req, res, next) => {
   if (req.path.startsWith('/api/')) {
     return next(new ApiError(404, 'API route not found.', 'ROUTE_NOT_FOUND'));
+  }
+  if (!serveFrontend) {
+    return next(new ApiError(404, 'Frontend is deployed separately from this API.', 'FRONTEND_NOT_HOSTED'));
   }
   res.sendFile(path.join(frontendDir, 'index.html'), error => {
     if (error) next(error);
