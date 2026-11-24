@@ -23,7 +23,10 @@ function mapOrder(row) {
 }
 
 export async function listOrders(req) {
-  const { data, error } = await req.supabase.from('orders').select('id,eventId:event_id,title,date,venue,ticketType:ticket_type,quantity,seats,seat,subtotal,serviceFee:service_fee,facilityFee:facility_fee,total,status,code,createdAt:created_at').order('created_at', { ascending: false });
+  const { data, error } = await req.supabase
+    .from('orders')
+    .select('id,eventId:event_id,title,date,venue,ticketType:ticket_type,quantity,seats,seat,subtotal,serviceFee:service_fee,facilityFee:facility_fee,total,status,code,createdAt:created_at')
+    .order('created_at', { ascending: false });
   if (error) throw new ApiError(503, 'Could not load your tickets.', 'DATABASE_UNAVAILABLE');
   return (data || []).map(mapOrder);
 }
